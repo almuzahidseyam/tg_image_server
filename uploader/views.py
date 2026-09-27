@@ -29,13 +29,13 @@ def upload_image(request):
             response = requests.post(url, data=data, files=files)
             result = response.json()
             
-            if result.get('ok'):
-                # Telegram returns multiple sizes. The last one is the largest.
+                        if result.get('ok'):
                 file_id = result['result']['photo'][-1]['file_id']
+                message_id = result['result']['message_id']
                 
-                # Save to DB
                 entry = ImageEntry.objects.create(
                     telegram_file_id=file_id,
+                    telegram_message_id=message_id,
                     file_name=image_file.name
                 )
                 
@@ -69,3 +69,20 @@ def serve_image(request, short_id):
     response = HttpResponse(img_res.content, content_type=img_res.headers.get('Content-Type', 'image/jpeg'))
     response['Cache-Control'] = 'public, max-age=31536000' # Cache for 1 year
     return response
+
+def gallery_view(request):
+    images = ImageEntry.objects.all().order_by('-uploaded_at')
+    return render(request, 'gallery.html', {'images': images})
+
+@csrf_exempt
+def delete_image(request, short_id):
+    if request.method == 'POST':
+        entry = get_object_or_404(ImageEntry, short_id=short_id)
+        
+        if entry.telegram_message_id:
+            delete_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/deleteMessage"
+            requests.post(delete_url, data={'chat_id': TELEGRAM_CHANNEL_ID, 'message_id': entry.telegram_message_id})
+            
+        entry.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'error': 'Invalid request'}, status=400)
