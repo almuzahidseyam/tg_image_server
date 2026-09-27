@@ -8,27 +8,17 @@
 </head>
 <body class="bg-slate-50 min-h-screen p-8">
     <div class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
+                <div class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">Image Gallery</h1>
                 <p class="text-slate-500 mt-1">Manage your uploaded images</p>
             </div>
-            <a href="/" class="bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">Back to Upload</a>
+            <div class="flex gap-4">
+                <input type="password" id="api-key" placeholder="API Key (for deletion)" class="text-sm bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48">
+                <a href="/" class="bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">Back to Upload</a>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {% for img in images %}
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group" id="card-{{ img.short_id }}">
-                                <div class="h-48 w-full bg-slate-100 flex items-center justify-center relative">
-                    {% if img.file_name|lower|slice:"-4:" == ".mp4" %}
-                    <video src="/img/{{ img.short_id }}" class="object-cover h-full w-full" muted autoplay loop></video>
-                    {% else %}
-                    <img src="/img/{{ img.short_id }}" class="object-cover h-full w-full" loading="lazy">
-                    {% endif %}
-                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"> bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick="deleteImage('{{ img.short_id }}')" class="bg-red-500 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-red-600">Delete Permanently</button>
-                    </div>
-                </div>
                 <div class="p-4">
                     <p class="text-sm font-medium text-slate-700 truncate" title="{{ img.file_name }}">{{ img.file_name }}</p>
                     <p class="text-xs text-slate-400 mt-1">{{ img.uploaded_at|date:"M d, Y H:i" }}</p>
@@ -47,11 +37,28 @@
     </div>
 
     <script>
-        async function deleteImage(shortId) {
+                async function deleteImage(shortId) {
             if (!confirm('Are you sure you want to permanently delete this image from the server and Telegram?')) return;
             
+            const apiKey = document.getElementById('api-key').value;
+            const formData = new FormData();
+            formData.append('api_key', apiKey);
+            
             try {
-                const res = await fetch(/api/delete/ + shortId + /, { method: 'POST' });
+                const res = await fetch(/api/delete/ + shortId + /, { 
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('card-' + shortId).remove();
+                } else {
+                    alert('Delete failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Connection error.');
+            }
+        });
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('card-' + shortId).remove();
@@ -72,4 +79,5 @@
     </script>
 </body>
 </html>
+
 

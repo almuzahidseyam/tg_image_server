@@ -19,6 +19,11 @@ def gallery_view(request):
 @csrf_exempt
 def delete_image(request, short_id):
     if request.method == 'POST':
+        # Security: Prevent unauthorized deletion (CWE-285)
+        client_key = request.POST.get('api_key', '')
+        if UPLOAD_API_KEY and client_key != UPLOAD_API_KEY:
+            return JsonResponse({'error': 'Unauthorized. Invalid API Key.'}, status=403)
+            
         entry = get_object_or_404(ImageEntry, short_id=short_id)
         
         if entry.telegram_message_id:
@@ -104,3 +109,4 @@ def serve_image(request, short_id):
     response = StreamingHttpResponse(img_res.iter_content(chunk_size=8192), content_type=content_type)
     response['Cache-Control'] = 'public, max-age=31536000'
     return response
+
