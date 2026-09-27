@@ -149,3 +149,4 @@ SECURE_HSTS_PRELOAD = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
+
