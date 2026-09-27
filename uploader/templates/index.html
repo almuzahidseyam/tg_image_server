@@ -10,7 +10,12 @@
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
                 <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-slate-800">TgImg Server</h1>
-            <p class="text-slate-500 mt-2">Unlimited free image hosting powered by Telegram</p>
+                        <p class="text-slate-500 mt-2">Unlimited free image hosting powered by Telegram</p>
+            
+            <div class="mt-6 flex max-w-xs mx-auto">
+                <input type="password" id="api-key" placeholder="Enter API Key (if required)" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center">
+            </div>
+
             <a href="/gallery/" class="inline-block mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-800">View Image Gallery &rarr;</a>
         </div>
 
@@ -80,8 +85,9 @@
                 current++;
                 document.getElementById('loading-text').innerText = 'Uploading ' + current + ' of ' + total + '...';
                 
-                const formData = new FormData();
+                                const formData = new FormData();
                 formData.append('image', files[i]);
+                formData.append('api_key', document.getElementById('api-key').value);
 
                 try {
                     const res = await fetch('/api/upload/', { method: 'POST', body: formData });
@@ -112,5 +118,6 @@
     </script>
 </body>
 </html>
+
 
 

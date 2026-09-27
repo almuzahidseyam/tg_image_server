@@ -12,9 +12,15 @@ TELEGRAM_CHANNEL_ID = os.environ.get('TELEGRAM_CHANNEL_ID', '')
 def index(request):
     return render(request, 'index.html')
 
+UPLOAD_API_KEY = os.environ.get('UPLOAD_API_KEY', '')
+
 @csrf_exempt
 def upload_image(request):
     if request.method == 'POST' and request.FILES.get('image'):
+        # Check API Key
+        client_key = request.POST.get('api_key', '')
+        if UPLOAD_API_KEY and client_key != UPLOAD_API_KEY:
+            return JsonResponse({'error': 'Unauthorized. Invalid API Key.'}, status=403)
         if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHANNEL_ID:
             return JsonResponse({'error': 'Telegram Bot Token or Channel ID is missing in server config.'}, status=500)
             
@@ -86,3 +92,4 @@ def delete_image(request, short_id):
         entry.delete()
         return JsonResponse({'success': True})
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
