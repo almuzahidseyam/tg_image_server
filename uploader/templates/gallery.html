@@ -19,9 +19,13 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {% for img in images %}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group" id="card-{{ img.short_id }}">
-                <div class="h-48 w-full bg-slate-100 flex items-center justify-center relative">
+                                <div class="h-48 w-full bg-slate-100 flex items-center justify-center relative">
+                    {% if img.file_name|lower|slice:"-4:" == ".mp4" %}
+                    <video src="/img/{{ img.short_id }}" class="object-cover h-full w-full" muted autoplay loop></video>
+                    {% else %}
                     <img src="/img/{{ img.short_id }}" class="object-cover h-full w-full" loading="lazy">
-                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {% endif %}
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"> bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onclick="deleteImage('{{ img.short_id }}')" class="bg-red-500 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-red-600">Delete Permanently</button>
                     </div>
                 </div>
@@ -68,3 +72,4 @@
     </script>
 </body>
 </html>
+

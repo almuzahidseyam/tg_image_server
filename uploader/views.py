@@ -24,19 +24,27 @@ def upload_image(request):
         if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHANNEL_ID:
             return JsonResponse({'error': 'Telegram Bot Token or Channel ID is missing in server config.'}, status=500)
             
-        image_file = request.FILES['image']
+                image_file = request.FILES['image']
+        
+        # Check file type for Video/GIF support
+        is_document = image_file.name.lower().endswith(('.mp4', '.gif', '.webm', '.pdf', '.zip'))
+        api_method = "sendDocument" if is_document else "sendPhoto"
+        file_key = 'document' if is_document else 'photo'
         
         # Send to Telegram
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
-        files = {'photo': image_file.read()}
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/{api_method}"
+        files = {file_key: image_file.read()}
         data = {'chat_id': TELEGRAM_CHANNEL_ID}
         
         try:
             response = requests.post(url, data=data, files=files)
             result = response.json()
             
-                        if result.get('ok'):
-                file_id = result['result']['photo'][-1]['file_id']
+            if result.get('ok'):
+                if is_document:
+                    file_id = result['result']['document']['file_id']
+                else:
+                    file_id = result['result']['photo'][-1]['file_id']
                 message_id = result['result']['message_id']
                 
                 entry = ImageEntry.objects.create(
@@ -67,12 +75,16 @@ def serve_image(request, short_id):
         
     file_path = res['result']['file_path']
     
-    # 2. Download the actual file bytes
+        # 2. Download the actual file bytes
     download_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
     img_res = requests.get(download_url)
     
     # 3. Stream back to user with caching
-    response = HttpResponse(img_res.content, content_type=img_res.headers.get('Content-Type', 'image/jpeg'))
+    content_type = img_res.headers.get('Content-Type', 'application/octet-stream')
+    if entry.file_name.lower().endswith('.mp4'): content_type = 'video/mp4'
+    if entry.file_name.lower().endswith('.gif'): content_type = 'image/gif'
+    
+    response = HttpResponse(img_res.content, content_type=content_type)
     response['Cache-Control'] = 'public, max-age=31536000' # Cache for 1 year
     return response
 
@@ -92,4 +104,6 @@ def delete_image(request, short_id):
         entry.delete()
         return JsonResponse({'success': True})
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
 
