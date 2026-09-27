@@ -90,7 +90,10 @@ def serve_image(request, short_id):
     entry = get_object_or_404(ImageEntry, short_id=short_id)
     
     file_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getFile?file_id={entry.telegram_file_id}"
-    res = requests.get(file_url).json()
+    try:
+        res = requests.get(file_url, timeout=10).json()
+    except requests.exceptions.RequestException:
+        return HttpResponse("Telegram API unreachable. Please try again later.", status=502)
     
     if not res.get('ok'):
         return HttpResponse("Image not found on Telegram servers.", status=404)
@@ -98,9 +101,10 @@ def serve_image(request, short_id):
     file_path = res['result']['file_path']
     download_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
     
-    # Architecture Perf: Use streaming to prevent RAM exhaustion (DoS) when serving large videos/files
-    # Instead of loading a 20MB file into memory, stream it directly to the client in 8KB chunks.
-    img_res = requests.get(download_url, stream=True)
+    try:
+        img_res = requests.get(download_url, stream=True, timeout=15)
+    except requests.exceptions.RequestException:
+        return HttpResponse("Failed to download image from Telegram.", status=502)
     
     content_type = img_res.headers.get('Content-Type', 'application/octet-stream')
     if entry.file_name.lower().endswith('.mp4'): content_type = 'video/mp4'
@@ -109,4 +113,5 @@ def serve_image(request, short_id):
     response = StreamingHttpResponse(img_res.iter_content(chunk_size=8192), content_type=content_type)
     response['Cache-Control'] = 'public, max-age=31536000'
     return response
+
 
